@@ -22,20 +22,38 @@ $app->add(TwigMiddleware::createFromContainer($app));
 $app->addErrorMiddleware(false, false, false);
 
 $app->group('/board', function (RouteCollectorProxy $group) {
-    $group->get('/message', Src\Controllers\Board\MessageController::class . ':index')
-        ->setName('message.index');
-    $group->post('/message', Src\Controllers\Board\MessageController::class . ':store')
-        ->setName('message.store');
-    $group->get('/message/{message:[0-9]+}', Src\Controllers\Board\MessageController::class . ':show')
-        ->setName('message.show');
-    $group->put('/message/{message}', Src\Controllers\Board\MessageController::class . ':update')
-        ->setName('message.update');
-    $group->delete('/message/{message:[0-9]+}', Src\Controllers\Board\MessageController::class . ':delete')
-        ->setName('message.delete');
-    $group->post('/message/{message:[0-9]+}/comment', Src\Controllers\Board\CommentController::class . ':store')
-        ->setName('comment.store');
-    $group->put('/message/{message:[0-9]+}/comment/{comment:[0-9]+}', Src\Controllers\Board\CommentController::class . ':update');
-    $group->delete('/message/{message:[0-9]+}/comment/{comment:[0-9]+}', Src\Controllers\Board\CommentController::class . ':delete');
+    $group->get(
+        '/message',
+        Src\Controllers\Board\MessageController::class . ':index'
+        )->setName('message.index');
+    $group->post(
+        '/message',
+        Src\Controllers\Board\MessageController::class . ':store'
+        )->setName('message.store');
+    $group->get(
+        '/message/{message:[0-9]+}',
+        Src\Controllers\Board\MessageController::class . ':show'
+        )->setName('message.show');
+    $group->put(
+        '/message/{message}',
+        Src\Controllers\Board\MessageController::class . ':update'
+        )->setName('message.update');
+    $group->delete(
+        '/message/{message:[0-9]+}',
+        Src\Controllers\Board\MessageController::class . ':delete'
+        )->setName('message.delete');
+    $group->post(
+        '/message/{message:[0-9]+}/comment',
+        Src\Controllers\Board\CommentController::class . ':store'
+        )->setName('comment.store');
+    $group->put(
+        '/message/{message:[0-9]+}/comment/{comment:[0-9]+}',
+        Src\Controllers\Board\CommentController::class . ':update'
+    );
+    $group->delete(
+        '/message/{message:[0-9]+}/comment/{comment:[0-9]+}',
+        Src\Controllers\Board\CommentController::class . ':delete'
+    );
 });
 
 $app->run();

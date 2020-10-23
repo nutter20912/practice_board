@@ -11,33 +11,33 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Message
 {
-    /** 
+    /**
      * @ORM\Id
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue
      */
     protected $id;
 
-    /** 
-     * @ORM\Column(type="string") 
+    /**
+     * @ORM\Column(type="string")
      * @var stinrg
      */
     protected $author;
 
-    /** 
-     * @ORM\Column(type="string") 
+    /**
+     * @ORM\Column(type="string")
      * @var stinrg
      */
     protected $title;
 
-    /** 
-     * @ORM\Column(type="text") 
+    /**
+     * @ORM\Column(type="text")
      * @var stinrg
      */
     protected $content;
 
-    /** 
-     * @ORM\Column(type="datetime") 
+    /**
+     * @ORM\Column(type="datetime")
      * @var datetime
      */
     protected $created_at;
@@ -130,11 +130,21 @@ class Message
         $this->content = $content;
     }
 
+    /**
+     * getCreatedAt
+     *
+     * @return string
+     */
     public function getCreatedAt()
     {
         return $this->created_at->format('Y-m-d H:i:s');
     }
 
+    /**
+     * setCreatedAt
+     *
+     * @return void
+     */
     public function setCreatedAt()
     {
         $this->created_at = new \DateTime("now");

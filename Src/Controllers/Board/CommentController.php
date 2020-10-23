@@ -14,21 +14,21 @@ class CommentController
 {
     /**
      * container
-     * 
+     *
      * @var \Psr\Container\ContainerInterface $container
      */
     protected $container;
 
     /**
      * EntityManager
-     * 
+     *
      * @var \Doctrine\ORM\EntityManager $em
      */
     protected $em;
 
     /**
      * QueryBuilder
-     * 
+     *
      * @var \Doctrine\ORM\QueryBuilder $qb;
      */
     protected $qb;
@@ -51,9 +51,9 @@ class CommentController
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      * @param array $args
-     * 
+     *
      * @return resource redirect to message.index
-     * 
+     *
      * @throws HttpNotFoundException
      */
     public function store(Request $request, Response $response, $args)
@@ -89,7 +89,7 @@ class CommentController
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      * @param array $args
-     * 
+     *
      * @return string update result
      */
     public function update(Request $request, Response $response, $args)
@@ -124,7 +124,7 @@ class CommentController
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      * @param array $args
-     * 
+     *
      * @return string delete result
      */
     public function delete(Request $request, Response $response, $args)

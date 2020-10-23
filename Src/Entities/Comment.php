@@ -10,33 +10,33 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Comment
 {
-    /** 
+    /**
      * @ORM\Id
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue
      */
     protected $id;
 
-    /** 
-     * @ORM\Column(type="integer") 
+    /**
+     * @ORM\Column(type="integer")
      * @var integer
      */
     protected $message_id;
 
-    /** 
-     * @ORM\Column(type="string") 
+    /**
+     * @ORM\Column(type="string")
      * @var stinrg
      */
     protected $name;
 
-    /** 
-     * @ORM\Column(type="string") 
+    /**
+     * @ORM\Column(type="string")
      * @var stinrg
      */
     protected $comment;
 
-    /** 
-     * @ORM\Column(type="datetime") 
+    /**
+     * @ORM\Column(type="datetime")
      * @var datetime
      */
     protected $created_at;
@@ -46,11 +46,21 @@ class Comment
      */
     private $message;
 
+    /**
+     * getId
+     *
+     * @return string
+     */
     public function getMessage(): ?Message
     {
         return $this->message;
     }
 
+    /**
+     * getId
+     *
+     * @return void
+     */
     public function setMessage(?Message $message): self
     {
         $this->message = $message;
@@ -58,6 +68,11 @@ class Comment
         return $this;
     }
 
+    /**
+     * getId
+     *
+     * @return int
+     */
     public function getMessageId(): int
     {
         return $this->message_id;

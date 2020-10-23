@@ -15,21 +15,21 @@ class MessageController
 {
     /**
      * container
-     * 
+     *
      * @var \Psr\Container\ContainerInterface $container
      */
     protected $container;
 
     /**
      * EntityManager
-     * 
+     *
      * @var \Doctrine\ORM\EntityManager $em
      */
     protected $em;
 
     /**
      * QueryBuilder
-     * 
+     *
      * @var \Doctrine\ORM\QueryBuilder $qb;
      */
     protected $qb;
@@ -49,7 +49,7 @@ class MessageController
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
-     * 
+     *
      * @return resource page to redirect
      */
     public function index(Request $request, Response $response)
@@ -86,9 +86,9 @@ class MessageController
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      * @param array $args
-     * 
+     *
      * @return resource page to redirect
-     * 
+     *
      * @throws HttpNotFoundException
      */
     public function show(Request $request, Response $response, $args)
@@ -111,7 +111,7 @@ class MessageController
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
-     * 
+     *
      * @return resource page to redirect
      */
     public function store(Request $request, Response $response)
@@ -154,9 +154,9 @@ class MessageController
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      * @param array $args
-     * 
+     *
      * @return resource page to redirect
-     * 
+     *
      * @throws HttpNotFoundException
      */
     public function update(Request $request, Response $response, $args)
@@ -199,9 +199,9 @@ class MessageController
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      * @param array $args
-     * 
+     *
      * @return resource page to redirect
-     * 
+     *
      * @throws HttpNotFoundException
      */
     public function delete(Request $request, Response $response, $args)
@@ -231,7 +231,7 @@ class MessageController
      * @param \Doctrine\ORM\QueryBuilder $dql
      * @param int $page
      * @param int $liimit
-     * 
+     *
      * @return Doctrine\ORM\Tools\Pagination\Paginator $paginator
      */
     private function paginate($dql, $page = 1, $limit = 5)
