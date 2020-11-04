@@ -3,10 +3,146 @@
     <head>
         <meta charset="UTF-8">
         <title>{% block title %}Welcome!{% endblock %}</title>
-        {% block stylesheets %}{% endblock %}
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app') }}
+        {% endblock %}
+
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+        {% endblock %}
     </head>
+
+    <template class="card">
+        <div class="card mb-4 mt-4" style="width: 36rem;">
+            <div class="card-body">
+                <h6 class="message-id card-subtitle mb-2 text-muted"></h6>
+                <a class="edit-message-link" href="">
+                    <h5 class="message-title card-title"></h5>
+                </a>
+                <p class="message-content card-text"></p>
+                <p class="message-time card-subtitle mb-2 text-muted"></p>
+                <button type="button" class="message-count btn btn-primary" data-toggle="collapse"
+                    data-target="" aria-expanded="false" aria-controls="">
+                    comments <span class="message-count badge badge-light">count</span>
+                </button>
+                <div class="collapse comment-collapse">
+                    <ul class="list-group commentList">
+                    </ul>
+                    <form action="" method="POST" class="comment form-horizontal border mb-4 mt-4">
+                        <label class="col-sm-3">name</label>
+                        <input class="col-sm-3 form-control-inline" type="text" name="name">
+                        <div>
+                            <label class="col-sm-3">comment</label>
+                            <input class="col-sm-7 form-control-inline" type="text" name="content">
+                            <button type="submit" class="btn btn-primary btn-sm">submit</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template class="comment">
+        <li class="comment list-group-item">
+            <div class="form-group row">
+                <label class="comment-name col-sm-3 col-form-label">name</label>
+                <input type="text" readonly class="comment-content form-control-plaintext col-sm-7 text-monospace" value="">
+                <button class="btn btn-outline-primary btn-sm submit" value='' style="display:none">submit</button>
+            </div>
+            <div class="float-right">
+                <label class="comment-created-at card-subtitle mb-2 text-muted">createdAt</label>
+                <button class="btn btn-outline-secondary btn-sm edit" value=''>edit</button>
+                <button class="btn btn-outline-danger btn-sm delete" value=''>delete</button>
+            </div>
+        </li>
+    </template>
+
+    <template class="addMessage">
+        <form action="" method="POST" class="add-message form-horizontal border mb-4 mt-4" name="message">
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作者</label>
+                <div class="col-sm-5">
+                    <input type="text" name="author" id="message-author" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">標題</label>
+                <div class="col-sm-5">
+                    <input type="text" name="title" id=" message-title" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">內容</label>
+                <div class="col-sm-5">
+                    <textarea name="content" id="message-content" rows="4" cols="50" class="form-control"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">留言</button>
+        </form>
+    </template>
+
+    <template class="editMessage">
+        <div class="panel-body mt-4 ml-4" style="vertical-align: top; width:38em;">
+            <!-- 刪除表單 -->
+            <form action="" method="POST" class="delete-message form-horizontal">
+                <input type="hidden" name="_method" value="DELETE"/>
+                <button type="submit" class="btn btn-outline-danger btn-sm">刪除</button>
+            </form>
+            <!-- 編輯留言表單 -->
+            <form action="" method="POST" class="edit-message form-horizontal mt-4 ml-4">
+                <input type="hidden" name="_method" value="PUT"/>
+                <div class="form-group row">
+                    <label for="staticAuthor" class="col-sm-2 col-form-label">作者</label>
+                    <div class="col-sm-10">
+                        <input type="text" readonly class="form-control-plaintext" id="staticAuthor" value="">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="staticTitle" class="col-sm-2 col-form-label">標題</label>
+                    <div class="col-sm-10">
+                        <input type="text" readonly class="form-control-plaintext" id="staticTitle" value="">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="inputPassword" class="col-sm-2 col-form-label">內容</label>
+                    <div class="col-sm-10">
+                        <textarea name="content" id="staticContent" rows="4" cols="50"
+                            class="form-control" style="vertical-align: top; width:38em;">
+                        </textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" align="center">更新</button>
+            </form>
+        <div>
+    </template>
+
     <body>
-        {% block body %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+        {% block body %}
+        <div class="row">
+            <div class="col-4">
+                <div class="list-group" id="list-tab" role="tablist">
+                    <a class="list-group-item list-group-item-action active" id="list-home-list"
+                        data-toggle="list" href="#list-home" role="tab" aria-controls="home">home</a>
+                    <a class="list-group-item list-group-item-action" id="list-add-list"
+                        data-toggle="list" href="#list-add" role="tab" aria-controls="add">add message</a>
+                    <a class="list-group-item list-group-item-action" id="list-edit-list"
+                        data-toggle="list" href="#list-edit" role="tab" aria-controls="edit">edit message</a>
+                </div>
+            </div>
+            <div class="container col-8">
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="all-message tab-pane fade show active" id="list-home"
+                        role="tabpanel" aria-labelledby="list-home-list">
+                    </div>
+                    <div class="add-page tab-pane fade" id="list-add" role="tabpanel"
+                        aria-labelledby="list-add-list">
+                    </div>
+                    <div class="edit-page tab-pane fade" id="list-edit" role="tabpanel"
+                        aria-labelledby="list-edit-list">
+                    </div>
+                <div>
+            </div>
+        </div>
+        {% endblock %}
     </body>
 </html>
