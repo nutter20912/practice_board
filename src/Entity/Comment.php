@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Entity\Board;
+namespace App\Entity;
 
-use App\Repository\Board\CommentRepository;
+use App\Repository\CommentRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass=CommentRepository::class)
+ * @ORM\Table(name="comment")
  */
 class Comment
 {
@@ -18,68 +20,91 @@ class Comment
     private $id;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(
+     *  name="message_id",
+     *  options={"comment"="訊息id"},
+     *  type="integer"
+     * )
      */
     private $message_id;
 
     /**
-     * @ORM\Column(type="string", length=30)
+     * @Assert\NotBlank
+     *
+     * @ORM\Column(
+     *  name="name",
+     *  options={"comment"="名字"},
+     *  type="string",
+     *  length=30
+     * )
      */
     private $name;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank
+     *
+     * @ORM\Column(
+     *  name="content",
+     *  options={"comment"="內容"},
+     *  type="string",
+     *  length=255
+     * )
      */
     private $content;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @Assert\NotBlank
+     *
+     * @ORM\Column(
+     *  name="created_at",
+     *  options={"comment"="新增時間"},
+     *  type="datetime"
+     * )
      */
     private $created_at;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @Assert\NotBlank
+     *
+     * @ORM\Column(
+     *  name="updated_at",
+     *  options={"comment"="更新時間"},
+     *  type="datetime"
+     * )
      */
     private $updated_at;
 
     /**
      * @ORM\ManyToOne(
-     *  targetEntity="App\Entity\Board\Message",
+     *  targetEntity="App\Entity\Message",
      *  inversedBy="comment"
      * )
      */
     private $message;
 
-    public function setMessage(?Message $message): self
-    {
-        $this->message = $message;
-
-        return $this;
-    }
-
-    public function getId(): ?int
+    public function getId()
     {
         return $this->id;
     }
 
-    public function getMessageId(): ?int
+    public function getMessageId()
     {
         return $this->message_id;
     }
 
-    public function setMessageId(int $message_id): self
+    public function setMessageId($message_id): self
     {
         $this->message_id = $message_id;
 
         return $this;
     }
 
-    public function getName(): ?string
+    public function getName()
     {
         return $this->name;
     }
 
-    public function setName(string $name): self
+    public function setName($name): self
     {
         $this->name = $name;
 
@@ -110,12 +135,12 @@ class Comment
         return $this;
     }
 
-    public function getContent(): ?string
+    public function getContent()
     {
         return $this->content;
     }
 
-    public function setContent(string $content): self
+    public function setContent($content): self
     {
         $this->content = $content;
 
@@ -125,5 +150,12 @@ class Comment
     public function getMessage(): ?Message
     {
         return $this->message;
+    }
+
+    public function setMessage(?Message $message): self
+    {
+        $this->message = $message;
+
+        return $this;
     }
 }
