@@ -14,6 +14,7 @@
 composer.lock
 symfony.lock
 yarn.lock
+package-lock.json
 ###< symfony/framework-bundle ###
 
 ###> symfony/phpunit-bridge ###

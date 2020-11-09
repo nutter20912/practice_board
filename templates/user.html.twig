@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}Welcome!{% endblock %}</title>
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app') }}
+        {% endblock %}
+
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+            {{ encore_entry_script_tags('user') }}
+        {% endblock %}
+    </head>
+
+    <body>
+        {% block body %}
+        <div class="row mt-2 ml-2">
+            <div class="col-4">
+                <div class="list-group" id="list-tab" role="tablist">
+                    <a class="list-group-item list-group-item-action active" id="list-info-list"
+                        data-toggle="list" href="#list-info" role="tab" aria-controls="home">home</a>
+                    <a class="list-group-item list-group-item-action" id="list-records-list"
+                        data-toggle="list" href="#list-records" role="tab" aria-controls="add">cash records</a>
+                </div>
+            </div>
+            <div class="container col-7 bg-light border">
+                <div class="tab-content mt-3" id="nav-tabContent">
+                    <div class="user-info tab-pane fade show active" id="list-info"
+                        role="tabpanel" aria-labelledby="list-home-list">
+                    </div>
+                    <div class="cash-records tab-pane fade" id="list-records" role="tabpanel"
+                        aria-labelledby="list-records-list">
+                    </div>
+                <div>
+            </div>
+        </div>
+        <div class='block' hidden>
+            <div class="spinner-border" role="status">
+        </div>
+        {% endblock %}
+    </body>
+<div>
+</html>

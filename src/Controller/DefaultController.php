@@ -10,11 +10,20 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 class DefaultController extends AbstractController
 {
     /**
-     * @Route("/")
+     * @Route("/board")
      * @Method("GET")
      */
-    public function index(): Response
+    public function board(): Response
     {
-        return $this->render('base.html.twig');
+        return $this->render('board.html.twig');
+    }
+
+    /**
+     * @Route("/user")
+     * @Method("GET")
+     */
+    public function user(): Response
+    {
+        return $this->render('user.html.twig');
     }
 }
