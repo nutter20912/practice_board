@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,7 +10,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Response\ApiResponse;
 use App\Exceptions\ApiValidationException;
-use App\Repository\CashRecordsRepository;
 use App\Entity\CashRecords;
 use App\Entity\User;
 
@@ -137,14 +135,11 @@ class CashController
      * @Method("GET")
      *
      * @param \App\Entity\User $user
-     * @param \App\Repository\CashRecordsRepository $cashRecordsRepository
      *
      * @return App\Response\ApiResponse api response
      */
-    public function records(
-        User $user,
-        CashRecordsRepository $cashRecordsRepository
-    ): JsonResponse {
+    public function records(User $user): JsonResponse
+    {
         $currentPage = $this->request->get('page', 1);
         $condition = [
             'id' => $user->getId(),
@@ -152,19 +147,13 @@ class CashController
             'end' => $this->request->get('end') . ' 23:59:59',
         ];
 
-        $query = $cashRecordsRepository
+        list($total, $records) = $this->entityManager
+            ->getRepository(CashRecords::class)
             ->getRecordsByDate(
                 $condition,
                 self::PAGINATOR_PER_PAGE,
                 $currentPage
             );
-
-        $totall = (new Paginator($query))
-            ->setUseOutputWalkers(false)
-            ->count();
-
-        $records = $query
-            ->getResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY);
 
         foreach ($records as &$record) {
             $record['created_at'] = $record['created_at']
@@ -173,7 +162,7 @@ class CashController
 
         return ApiResponse::success([
             'account' => $user->getAccount(),
-            'pages'   => ceil($totall / self::PAGINATOR_PER_PAGE),
+            'pages'   => ceil($total / self::PAGINATOR_PER_PAGE),
             'records' => $records,
         ], 200);
     }
@@ -216,7 +205,7 @@ class CashController
     {
         $cashRecords = new CashRecords();
         $cashRecords->setOperator($user->getAccount());
-        $cashRecords->setCurrent($user->getCash() - $diff);
+        $cashRecords->setCurrent($user->getCash());
         $cashRecords->setDiff($diff);
         $cashRecords->setIp($this->request->getClientIp());
         $cashRecords->setUser($user);

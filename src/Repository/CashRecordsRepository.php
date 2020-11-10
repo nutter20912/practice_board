@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\CashRecords;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -30,7 +31,7 @@ class CashRecordsRepository extends ServiceEntityRepository
      *
      * @return \Doctrine\ORM\Query
      */
-    public function getRecordsByDate($condition , $limit, $page): Query
+    public function getRecordsByDate($condition, $limit, $page)
     {
         $fields = [
             'c.operator',
@@ -40,7 +41,7 @@ class CashRecordsRepository extends ServiceEntityRepository
             'c.created_at',
         ];
 
-        return $this->createQueryBuilder('c')
+        $query = $this->createQueryBuilder('c')
             ->select($fields)
             ->where('c.user_id = :id')
             ->andWhere('c.created_at > :start')
@@ -50,5 +51,10 @@ class CashRecordsRepository extends ServiceEntityRepository
             ->setFirstResult($limit * ($page - 1))
             ->setMaxResults($limit)
             ->getQuery();
+
+        return [
+            (new Paginator($query))->setUseOutputWalkers(false)->count(),
+            $query->getResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY)
+        ];
     }
 }
