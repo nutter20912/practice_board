@@ -4,9 +4,9 @@ namespace App\Repository;
 
 use App\Entity\CashRecords;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\Query;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Traits\PaginatorTrait;
+use App\Traits\QueryBuilderTrait;
 
 /**
  * @method CashRecords|null find($id, $lockMode = null, $lockVersion = null)
@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class CashRecordsRepository extends ServiceEntityRepository
 {
+    use PaginatorTrait;
+    use QueryBuilderTrait;
+
     /**
      * @param \Doctrine\Persistence\ManagerRegistry $registry
      */
@@ -26,35 +29,47 @@ class CashRecordsRepository extends ServiceEntityRepository
 
     /**
      * @param array $condition
-     * @param int $limit
-     * @param int $page
      *
-     * @return \Doctrine\ORM\Query
+     * @return array
      */
-    public function getRecordsByDate($condition, $limit, $page)
+    public function getRecordsByDate($condition)
     {
+        $queryBuilder = $this->createQueryBuilder('c');
+
+        $this->setWhere($queryBuilder, $condition);
+
+        if ($this->isPaginate()) {
+            $this->setPaginate($queryBuilder);
+        }
+
+        $alias = $queryBuilder->getRootAlias();
+
         $fields = [
-            'c.operator',
-            'c.diff',
-            'c.current',
-            'c.ip',
-            'c.created_at',
+            "{$alias}.operator",
+            "{$alias}.diff",
+            "{$alias}.current",
+            "{$alias}.ip",
+            "{$alias}.created_at",
         ];
 
-        $query = $this->createQueryBuilder('c')
+        return $queryBuilder
             ->select($fields)
-            ->where('c.user_id = :id')
-            ->andWhere('c.created_at > :start')
-            ->andWhere('c.created_at < :end')
-            ->orderBy('c.id', 'DESC')
-            ->setParameters($condition)
-            ->setFirstResult($limit * ($page - 1))
-            ->setMaxResults($limit)
-            ->getQuery();
+            ->orderBy("{$alias}.id", 'DESC')
+            ->getQuery()
+            ->getArrayResult();
+    }
 
-        return [
-            (new Paginator($query))->setUseOutputWalkers(false)->count(),
-            $query->getResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY)
-        ];
+    /**
+     * @param array $condition
+     *
+     * @return int
+     */
+    public function getRecordsPages($condition)
+    {
+        $queryBuilder = $this->createQueryBuilder('c');
+
+        $this->setWhere($queryBuilder, $condition);
+
+        return $this->getPages($queryBuilder);
     }
 }

@@ -140,20 +140,18 @@ class CashController
      */
     public function records(User $user): JsonResponse
     {
-        $currentPage = $this->request->get('page', 1);
+        $repository =  $this->entityManager->getRepository(CashRecords::class);
+        $repository
+            ->setPageLimit(self::PAGINATOR_PER_PAGE)
+            ->setCurrentPage($this->request->get('page', 1));
+
         $condition = [
-            'id' => $user->getId(),
-            'start' => $this->request->get('start') . ' 00:00:00',
-            'end' => $this->request->get('end') . ' 23:59:59',
+            'user_id = :id' => $user->getId(),
+            'created_at > :start' => $this->request->get('start') . ' 00:00:00',
+            'created_at < :end' => $this->request->get('end') . ' 23:59:59',
         ];
 
-        list($total, $records) = $this->entityManager
-            ->getRepository(CashRecords::class)
-            ->getRecordsByDate(
-                $condition,
-                self::PAGINATOR_PER_PAGE,
-                $currentPage
-            );
+        $records = $repository->getRecordsByDate($condition);
 
         foreach ($records as &$record) {
             $record['created_at'] = $record['created_at']
@@ -162,7 +160,7 @@ class CashController
 
         return ApiResponse::success([
             'account' => $user->getAccount(),
-            'pages'   => ceil($total / self::PAGINATOR_PER_PAGE),
+            'pages'   => $repository->getRecordsPages($condition),
             'records' => $records,
         ], 200);
     }

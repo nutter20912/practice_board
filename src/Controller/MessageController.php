@@ -46,12 +46,12 @@ class MessageController
      */
     public function index(Request $request): JsonResponse
     {
-        list($total, $messages) = $this->entityManager
-            ->getRepository(Message::class)
-            ->getMessagePaginator(
-                $request->get('page', 1),
-                self::PAGINATOR_PER_PAGE
-            );
+        $repository = $this->entityManager->getRepository(Message::class);
+        $repository
+            ->setPageLimit(self::PAGINATOR_PER_PAGE)
+            ->setCurrentPage($request->get('page', 1));
+
+        $messages = $repository->getMessagePaginator();
 
         foreach ($messages as &$message) {
             $message['comments'] = $this->entityManager
@@ -61,11 +61,11 @@ class MessageController
                 ->where('c.message_id = :id')
                 ->setParameter('id', $message['id'])
                 ->getQuery()
-                ->getResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY);
+                ->getArrayResult();
         }
 
         return ApiResponse::success([
-            'pages'   => ceil($total / self::PAGINATOR_PER_PAGE),
+            'pages'   => $repository->getMessagePages(),
             'messages' => $messages,
         ], 200);
     }
