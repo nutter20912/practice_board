@@ -2,17 +2,18 @@
 
 namespace App\Entity;
 
-use App\Repository\MessageRepository;
+use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Version;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @ORM\Entity(repositoryClass=MessageRepository::class)
- * @ORM\Table(name="message")
+ * @ORM\Entity(repositoryClass=UserRepository::class)
+ * @ORM\Table(name="user")
  */
-class Message
+class User
 {
     /**
      * @ORM\Id
@@ -22,43 +23,34 @@ class Message
     private $id;
 
     /**
+     * @Version
+     * @ORM\Column(type="integer")
+     */
+    private $version;
+
+    /**
      * @Assert\NotBlank
      *
      * @ORM\Column(
-     *  name="author",
-     *  options={"comment"="作者"},
+     *  name="account",
+     *  options={"comment"="帳號"},
      *  type="string",
-     *  length=30
+     *  length=30,
+     *  unique=true
      * )
      */
-    private $author;
+    private $account;
 
     /**
-     * @Assert\NotBlank
-     *
      * @ORM\Column(
-     *  name="title",
-     *  options={"comment"="標題"},
-     *  type="string",
-     *  length=50
+     *  name="cash",
+     *  options={"comment"="額度"},
+     * type="integer"
      * )
      */
-    private $title;
+    private $cash;
 
     /**
-     * @Assert\NotBlank
-     *
-     * @ORM\Column(
-     *  name="content",
-     *  options={"comment"="內容"},
-     *  type="text"
-     * )
-     */
-    private $content;
-
-    /**
-     * @Assert\NotBlank
-     *
      * @ORM\Column(
      *  name="created_at",
      *  options={"comment"="新增時間"},
@@ -68,8 +60,6 @@ class Message
     private $created_at;
 
     /**
-     * @Assert\NotBlank
-     *
      * @ORM\Column(
      *  name="updated_at",
      *  options={"comment"="更新時間"},
@@ -81,16 +71,16 @@ class Message
 
     /**
      * @ORM\OneToMany(
-     *  targetEntity="App\Entity\Comment",
-     *  mappedBy="message",
+     *  targetEntity="App\Entity\CashRecords",
+     *  mappedBy="user",
      *  orphanRemoval=true
      * )
      */
-    private $comment;
+    private $cashRecords;
 
     public function __construct()
     {
-        $this->comment = new ArrayCollection();
+        $this->cashRecords = new ArrayCollection();
     }
 
     public function getId()
@@ -98,38 +88,31 @@ class Message
         return $this->id;
     }
 
-    public function getAuthor()
+    public function getAccount()
     {
-        return $this->author;
+        return $this->account;
     }
 
-    public function setAuthor($author): self
+    public function setAccount($account): self
     {
-        $this->author = $author;
+        $this->account = $account;
 
         return $this;
     }
 
-    public function getTitle()
+    public function getUsername()
     {
-        return $this->title;
+        return (string) $this->account;
     }
 
-    public function setTitle($title): self
+    public function getCash()
     {
-        $this->title = $title;
-
-        return $this;
+        return $this->cash;
     }
 
-    public function getContent()
+    public function setCash($cash): self
     {
-        return $this->content;
-    }
-
-    public function setContent($content): self
-    {
-        $this->content = $content;
+        $this->cash = $cash;
 
         return $this;
     }
@@ -158,8 +141,8 @@ class Message
         return $this;
     }
 
-    public function getComment(): Collection
+    public function getCashRecords(): Collection
     {
-        return $this->comment;
+        return $this->cashRecords;
     }
 }

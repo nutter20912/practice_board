@@ -5,10 +5,14 @@ namespace App\Repository;
 use App\Entity\Message;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Doctrine\ORM\Tools\Pagination\Paginator;
+use App\Traits\PaginatorTrait;
+use App\Traits\QueryBuilderTrait;
 
 class MessageRepository extends ServiceEntityRepository
 {
+    use PaginatorTrait;
+    use QueryBuilderTrait;
+
     /**
      * @param \Doctrine\Persistence\ManagerRegistry $registry
      */
@@ -23,17 +27,27 @@ class MessageRepository extends ServiceEntityRepository
      *
      * @return Message[] Returns an array of Message objects
      */
-    public function getMessagePaginator($page, $limit)
+    public function getMessagePaginator()
     {
-        $query = $this->createQueryBuilder('m')
-            ->orderBy('m.id', 'DESC')
-            ->setFirstResult($limit * ($page - 1))
-            ->setMaxResults($limit)
-            ->getQuery();
+        $queryBuilder = $this->createQueryBuilder('m');
 
-        return [
-            (new Paginator($query))->count(),
-            $query->getResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY)
-        ];
+        if ($this->isPaginate()) {
+            $this->setPaginate($queryBuilder);
+        }
+
+        return $queryBuilder
+            ->orderBy('m.id', 'DESC')
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    /**
+     * @return int
+     */
+    public function getMessagePages()
+    {
+        $queryBuilder = $this->createQueryBuilder('m');
+
+        return $this->getPages($queryBuilder);
     }
 }

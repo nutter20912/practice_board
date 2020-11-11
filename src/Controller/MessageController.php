@@ -8,7 +8,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use App\Entity\Message;
 use App\Exceptions\ApiValidationException;
-use App\Repository\MessageRepository;
 use App\Response\ApiResponse;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -42,18 +41,17 @@ class MessageController
      * @Method("GET")
      *
      * @param \Symfony\Component\HttpFoundation\Request $request
-     * @param \App\Repository\MessageRepository $messageRepository
      *
      * @return App\Response\ApiResponse api response
      */
-    public function index(
-        Request $request,
-        MessageRepository $messageRepository
-    ): JsonResponse {
-        list($count, $messages) = $messageRepository->getMessagePaginator(
-            $request->get('page', 1),
-            self::PAGINATOR_PER_PAGE
-        );
+    public function index(Request $request): JsonResponse
+    {
+        $repository = $this->entityManager->getRepository(Message::class);
+        $repository
+            ->setPageLimit(self::PAGINATOR_PER_PAGE)
+            ->setCurrentPage($request->get('page', 1));
+
+        $messages = $repository->getMessagePaginator();
 
         foreach ($messages as &$message) {
             $message['comments'] = $this->entityManager
@@ -63,14 +61,13 @@ class MessageController
                 ->where('c.message_id = :id')
                 ->setParameter('id', $message['id'])
                 ->getQuery()
-                ->getResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY);
+                ->getArrayResult();
         }
 
         return ApiResponse::success([
-            'pages'   => ceil($count / self::PAGINATOR_PER_PAGE),
+            'pages'   => $repository->getMessagePages(),
             'messages' => $messages,
         ], 200);
-
     }
 
     /**
