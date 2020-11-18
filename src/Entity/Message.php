@@ -74,7 +74,6 @@ class Message
      *  name="updated_at",
      *  options={"comment"="更新時間"},
      *  type="datetime",
-     *  columnDefinition="DATETIME on update CURRENT_TIMESTAMP"
      * )
      */
     private $updated_at;

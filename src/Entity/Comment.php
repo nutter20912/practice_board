@@ -69,8 +69,7 @@ class Comment
      * @ORM\Column(
      *  name="updated_at",
      *  options={"comment"="更新時間"},
-     *  type="datetime",
-     *  columnDefinition="DATETIME on update CURRENT_TIMESTAMP"
+     *  type="datetime"
      * )
      */
     private $updated_at;

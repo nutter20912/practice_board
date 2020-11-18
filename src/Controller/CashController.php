@@ -184,7 +184,13 @@ class CashController
 
         if (!$user) {
             throw new NotFoundHttpException('resource not found');
-        } elseif ($diff < 0 && abs($diff) > $user->getCash()) {
+        }
+
+        if ($diff == 0) {
+            throw new ApiValidationException('error cash', 902);
+        }
+
+        if ($diff < 0 && abs($diff) > $user->getCash()) {
             throw new ApiValidationException('over cash', 903);
         }
 

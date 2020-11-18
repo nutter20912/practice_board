@@ -43,6 +43,8 @@
     },
     "require-dev": {
         "codedungeon/phpunit-result-printer": "^0.29.3",
+        "dama/doctrine-test-bundle": "^6.4",
+        "doctrine/doctrine-fixtures-bundle": "^3.3",
         "symfony/browser-kit": "4.4.*",
         "symfony/css-selector": "4.4.*",
         "symfony/debug-bundle": "^4.4",
