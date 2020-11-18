@@ -8,10 +8,12 @@ class ApiResponse
 {
     protected $response;
 
-    public function __construct()
-    {
-    }
-
+    /**
+     * @param mixed result
+     * @param int $httpCode
+     *
+     * @return Symfony\Component\HttpFoundation\JsonResponse
+     */
     public static function success($result, $httpCode): JsonResponse
     {
         return new JsonResponse([
@@ -21,11 +23,21 @@ class ApiResponse
         ], $httpCode);
     }
 
-    public static function fail($respone, $httpCode): JsonResponse
-    {
+    /**
+     * @param int $contentCode
+     * @param string $contentMsg
+     * @param int $httpCode
+     *
+     * @return Symfony\Component\HttpFoundation\JsonResponse
+     */
+    public static function fail(
+        $contentCode,
+        $contentMsg,
+        $httpCode
+    ): JsonResponse {
         return new JsonResponse([
-            'code' => $respone['Code'],
-            'message' => $respone['Message'],
+            'code' => $contentCode,
+            'message' => $contentMsg,
             'result' => null,
         ], $httpCode);
     }

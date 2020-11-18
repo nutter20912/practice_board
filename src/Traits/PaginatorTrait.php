@@ -88,8 +88,10 @@ trait PaginatorTrait
             ->getQuery()
             ->getSingleScalarResult();
 
-        return $this->isPaginate()
+        $pages = $this->isPaginate()
             ? ceil($total / $this->getPageLimit())
             : 1;
+
+        return (int) $pages;
     }
 }

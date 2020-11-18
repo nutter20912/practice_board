@@ -63,8 +63,7 @@ class User
      * @ORM\Column(
      *  name="updated_at",
      *  options={"comment"="更新時間"},
-     *  type="datetime",
-     *  columnDefinition="DATETIME on update CURRENT_TIMESTAMP"
+     *  type="datetime"
      * )
      */
     private $updated_at;
@@ -98,11 +97,6 @@ class User
         $this->account = $account;
 
         return $this;
-    }
-
-    public function getUsername()
-    {
-        return (string) $this->account;
     }
 
     public function getCash()

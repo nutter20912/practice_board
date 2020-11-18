@@ -25,19 +25,25 @@ class ExceptionSubscriber implements EventSubscriberInterface
         $exception = $event->getThrowable();
 
         if ($exception instanceof HttpExceptionInterface) {
-            $event->setResponse(
-                ApiResponse::fail([
-                    'Code' => $exception->getStatusCode(),
-                    'Message' => $exception->getMessage(),
-                ], $exception->getStatusCode())
-            );
-        } elseif ($exception instanceof ApiValidationException) {
-            $event->setResponse(
-                ApiResponse::fail([
-                    'Code' => $exception->getCode(),
-                    'Message' => $exception->getMessage(),
-                ], 400)
+            return $event->setResponse(
+                ApiResponse::fail(
+                    $exception->getStatusCode(),
+                    $exception->getMessage(),
+                    $exception->getStatusCode()
+                )
             );
         }
+
+        if ($exception instanceof ApiValidationException) {
+            return $event->setResponse(
+                ApiResponse::fail(
+                    $exception->getCode(),
+                    $exception->getMessage(),
+                    400
+                )
+            );
+        }
+
+        return;
     }
 }
