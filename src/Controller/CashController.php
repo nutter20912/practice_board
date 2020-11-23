@@ -7,11 +7,11 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Response\ApiResponse;
 use App\Exceptions\ApiValidationException;
 use App\Entity\CashRecords;
 use App\Entity\User;
+use App\Support\RedisLock;
 
 /**
  * CashController
@@ -68,23 +68,23 @@ class CashController
      * @Route("/{id}/add", requirements={"id"="\d+"})
      * @Method("PUT")
      *
-     * @param int $id
+     * @param \App\Entity\User $user
+     * @param \App\Support\RedisLock $redisLock
      *
      * @return App\Response\ApiResponse api response
      */
-    public function add($id): JsonResponse
+    public function add(User $user, RedisLock $redisLock): JsonResponse
     {
         $diff = (int)$this->request->get('cash');
 
-        $conn = $this->entityManager->getConnection();
-        $conn->beginTransaction();
+        $lock = $redisLock->lock('cash:' . $user->getAccount());
 
         try {
-            $user = $this->changeCash($id, $diff);
+            $user = $this->changeCash($user, $diff);
             $this->addCashRecord($user, $diff);
-            $conn->commit();
+            $redisLock->unlock($lock);
         } catch (\Exception $e) {
-            $conn->rollback();
+            $redisLock->unlock($lock);
             throw $e;
         }
 
@@ -101,23 +101,23 @@ class CashController
      * @Route("/{id}/sub", requirements={"id"="\d+"})
      * @Method("PUT")
      *
-     * @param int $id
+     * @param \App\Entity\User $user
+     * @param \App\Support\RedisLock $redisLock
      *
      * @return App\Response\ApiResponse api response
      */
-    public function sub($id): JsonResponse
+    public function sub(User $user, RedisLock $redisLock): JsonResponse
     {
         $diff = (int)$this->request->get('cash') * -1;
 
-        $conn = $this->entityManager->getConnection();
-        $conn->beginTransaction();
+        $lock = $redisLock->lock('cash:' . $user->getAccount());
 
         try {
-            $user = $this->changeCash($id, $diff);
+            $user = $this->changeCash($user, $diff);
             $this->addCashRecord($user, $diff);
-            $conn->commit();
+            $redisLock->unlock($lock);
         } catch (\Exception $e) {
-            $conn->rollback();
+            $redisLock->unlock($lock);
             throw $e;
         }
 
@@ -166,7 +166,7 @@ class CashController
     }
 
     /**
-     * @param int $id
+     * @param \App\Entity\User $user
      * @param int $diff
      *
      * @return \App\Entity\User $user
@@ -174,17 +174,9 @@ class CashController
      * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
      * @throws App\Exceptions\ApiValidationException
      */
-    private function changeCash($id, $diff): User
+    private function changeCash(User $user, $diff): User
     {
-        $user = $this->entityManager->find(
-            User::class,
-            $id,
-            \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE
-        );
-
-        if (!$user) {
-            throw new NotFoundHttpException('resource not found');
-        }
+        $this->entityManager->refresh($user);
 
         if ($diff == 0) {
             throw new ApiValidationException('error cash', 902);
@@ -195,7 +187,6 @@ class CashController
         }
 
         $user->setCash($user->getCash() + $diff);
-        $this->entityManager->persist($user);
         $this->entityManager->flush();
 
         return $user;

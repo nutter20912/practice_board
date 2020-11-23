@@ -34,3 +34,6 @@ services:
     App\EventSubscriber\ExceptionSubscriber:
         tags:
             - { name: kernel.event_subscriber, event: kernel.exception }
+
+    # phpredis extension with SncRedisBundle
+    Redis: '@snc_redis.default'
