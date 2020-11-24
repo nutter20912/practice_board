@@ -23,12 +23,6 @@ class User
     private $id;
 
     /**
-     * @Version
-     * @ORM\Column(type="integer")
-     */
-    private $version;
-
-    /**
      * @Assert\NotBlank
      *
      * @ORM\Column(

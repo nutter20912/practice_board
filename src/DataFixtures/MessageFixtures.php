@@ -8,6 +8,8 @@ use Doctrine\Persistence\ObjectManager;
 
 class MessageFixtures extends Fixture
 {
+    const USER_REFERENCE = 'message';
+
     public function load(ObjectManager $manager)
     {
         $message = new Message();
@@ -18,5 +20,7 @@ class MessageFixtures extends Fixture
         $message->setUpdatedAt(new \DateTime());
         $manager->persist($message);
         $manager->flush();
+
+        $this->addReference(self::USER_REFERENCE, $message);
     }
 }
