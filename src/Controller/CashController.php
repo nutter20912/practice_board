@@ -6,12 +6,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\RequestStack;
 use App\Response\ApiResponse;
-use App\Exceptions\ApiValidationException;
 use App\Entity\CashRecords;
 use App\Entity\User;
-use App\Support\RedisLock;
+use App\Service\CashService;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * CashController
@@ -22,42 +21,21 @@ class CashController
     const PAGINATOR_PER_PAGE = 5;
 
     /**
-     * @var \Doctrine\ORM\EntityManagerInterface $entityManager
-     */
-    private $entityManager;
-
-    /**
-     * @var \Symfony\Component\HttpFoundation\Request $request
-     */
-    private $request;
-
-    /**
-     * @param \Doctrine\ORM\EntityManagerInterface $entityManager
-     * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
-     */
-    public function __construct(
-        EntityManagerInterface $entityManager,
-        RequestStack $requestStack
-    ) {
-        $this->entityManager = $entityManager;
-        $this->request = $requestStack->getCurrentRequest();
-    }
-
-    /**
      * show cash
      *
      * @Route("/{id}", name="cash_show", requirements={"id"="\d+"})
      * @Method("GET")
      *
+     * @param \App\Service\CashService $cashService
      * @param \App\Entity\User $user
      *
      * @return App\Response\ApiResponse api response
      */
-    public function show(User $user): JsonResponse
+    public function show(CashService $cashService, User $user): JsonResponse
     {
         return ApiResponse::success([
             'account' => $user->getAccount(),
-            'cash' => $user->getCash(),
+            'cash' => $cashService->getCash($user),
             'updatedAt' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
         ], 200);
     }
@@ -68,30 +46,25 @@ class CashController
      * @Route("/{id}/add", requirements={"id"="\d+"})
      * @Method("PUT")
      *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param \App\Service\CashService $cashService
      * @param \App\Entity\User $user
-     * @param \App\Support\RedisLock $redisLock
      *
      * @return App\Response\ApiResponse api response
      */
-    public function add(User $user, RedisLock $redisLock): JsonResponse
-    {
-        $diff = (int)$this->request->get('cash');
-
-        $lock = $redisLock->lock('cash:' . $user->getAccount());
-
-        try {
-            $user = $this->changeCash($user, $diff);
-            $this->addCashRecord($user, $diff);
-            $redisLock->unlock($lock);
-        } catch (\Exception $e) {
-            $redisLock->unlock($lock);
-            throw $e;
-        }
+    public function add(
+        Request $request,
+        CashService $cashService,
+        User $user
+    ): JsonResponse {
+        $diff = (int)$request->get('cash');
+        $cash = $cashService->changeCash($user, $diff);
+        $cashRecord = $cashService->addCashRecord($request, $user, $cash, $diff);
 
         return ApiResponse::success([
             'account' => $user->getAccount(),
-            'cash' => $user->getCash(),
-            'updatedAt' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
+            'cash' => $cash,
+            'updatedAt' => $cashRecord->getCreatedAt()->format('Y-m-d H:i:s'),
         ], 200);
     }
 
@@ -101,30 +74,25 @@ class CashController
      * @Route("/{id}/sub", requirements={"id"="\d+"})
      * @Method("PUT")
      *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param \App\Service\CashService $cashService
      * @param \App\Entity\User $user
-     * @param \App\Support\RedisLock $redisLock
      *
      * @return App\Response\ApiResponse api response
      */
-    public function sub(User $user, RedisLock $redisLock): JsonResponse
-    {
-        $diff = (int)$this->request->get('cash') * -1;
-
-        $lock = $redisLock->lock('cash:' . $user->getAccount());
-
-        try {
-            $user = $this->changeCash($user, $diff);
-            $this->addCashRecord($user, $diff);
-            $redisLock->unlock($lock);
-        } catch (\Exception $e) {
-            $redisLock->unlock($lock);
-            throw $e;
-        }
+    public function sub(
+        Request $request,
+        CashService $cashService,
+        User $user
+    ): JsonResponse {
+        $diff = (int)$request->get('cash') * -1;
+        $cash = $cashService->changeCash($user, $diff);
+        $cashRecord = $cashService->addCashRecord($request, $user, $cash, $diff);
 
         return ApiResponse::success([
             'account' => $user->getAccount(),
-            'cash' => $user->getCash(),
-            'updatedAt' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
+            'cash' => $cash,
+            'updatedAt' => $cashRecord->getCreatedAt()->format('Y-m-d H:i:s'),
         ], 200);
     }
 
@@ -134,21 +102,27 @@ class CashController
      * @Route("/{id}/records", requirements={"id"="\d+"})
      * @Method("GET")
      *
+     * @param \Doctrine\ORM\EntityManagerInterface $entityManager
+     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param \App\Entity\User $user
      *
      * @return App\Response\ApiResponse api response
      */
-    public function records(User $user): JsonResponse
-    {
-        $repository =  $this->entityManager->getRepository(CashRecords::class);
+    public function records(
+        EntityManagerInterface $entityManager,
+        Request $request,
+        User $user
+    ): JsonResponse {
+        /** @var CashRecordsRepository */
+        $repository =  $entityManager->getRepository(CashRecords::class);
         $repository
             ->setPageLimit(self::PAGINATOR_PER_PAGE)
-            ->setCurrentPage($this->request->get('page', 1));
+            ->setCurrentPage($request->get('page', 1));
 
         $condition = [
             'user_id = :id' => $user->getId(),
-            'created_at > :start' => $this->request->get('start') . ' 00:00:00',
-            'created_at < :end' => $this->request->get('end') . ' 23:59:59',
+            'created_at > :start' => $request->get('start') . ' 00:00:00',
+            'created_at < :end' => $request->get('end') . ' 23:59:59',
         ];
 
         $records = $repository->getRecordsByDate($condition);
@@ -163,48 +137,5 @@ class CashController
             'pages'   => $repository->getRecordsPages($condition),
             'records' => $records,
         ], 200);
-    }
-
-    /**
-     * @param \App\Entity\User $user
-     * @param int $diff
-     *
-     * @return \App\Entity\User $user
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     * @throws App\Exceptions\ApiValidationException
-     */
-    private function changeCash(User $user, $diff): User
-    {
-        $this->entityManager->refresh($user);
-
-        if ($diff == 0) {
-            throw new ApiValidationException('error cash', 902);
-        }
-
-        if ($diff < 0 && abs($diff) > $user->getCash()) {
-            throw new ApiValidationException('over cash', 903);
-        }
-
-        $user->setCash($user->getCash() + $diff);
-        $this->entityManager->flush();
-
-        return $user;
-    }
-
-    /**
-     * @param \App\Entity\User $user
-     * @param int $diff
-     */
-    private function addCashRecord(User $user, $diff): void
-    {
-        $cashRecords = new CashRecords();
-        $cashRecords->setOperator($user->getAccount());
-        $cashRecords->setCurrent($user->getCash());
-        $cashRecords->setDiff($diff);
-        $cashRecords->setIp($this->request->getClientIp());
-        $cashRecords->setUser($user);
-        $this->entityManager->persist($cashRecords);
-        $this->entityManager->flush();
     }
 }
