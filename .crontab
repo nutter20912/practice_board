@@ -1,0 +1,2 @@
+# custom cron job
+* * * * *  /usr/bin/php /var/www/bin/console app:cash-sync
