@@ -10,6 +10,8 @@ use App\Exceptions\ApiValidationException;
 
 class CashService
 {
+    const REDIS_USER_DATABASE = 0;
+    const REDIS_CASH_RECORD_DATABASE = 1;
     const REDIS_CASH_PREFIX = 'cash:';
     const REDIS_CASH_EXPIRE = 3600;
 
@@ -40,25 +42,14 @@ class CashService
      */
     public function getCash(User $user)
     {
-        $expire = self::REDIS_CASH_EXPIRE;
-        $script = <<<EOT
-            local key = KEYS[1]
-            local cash = ARGV[1]
+        $key = $this->getRedisKey($user->getId());
 
-            if redis.call('GET', key) == false then
-                redis.call('SETNX', key, cash);
-                redis.call('EXPIRE', key, $expire);
-                return cash;
-            end
+        if ($this->redis->setNx($key, $user->getCash())) {
+            $this->redis->expire($key, self::REDIS_CASH_EXPIRE);
+            return $user->getCash();
+        }
 
-            return redis.call('GET', key);
-        EOT;
-
-        return $this->redis->eval(
-            $script,
-            [$this->getRedisKey($user->getId()), $user->getCash()],
-            1
-        );
+        return $this->redis->get($key);
     }
 
     /**
@@ -75,7 +66,7 @@ class CashService
             throw new ApiValidationException('error cash', 902);
         }
 
-        if (!$cash = $this->setCash($user, $diff)) {
+        if (!$cash = $this->setRedisCash($user, $diff)) {
             throw new ApiValidationException('over cash', 903);
         }
 
@@ -104,6 +95,7 @@ class CashService
         $cashRecord->setUser($user);
         $this->entityManager->persist($cashRecord);
         $this->entityManager->flush();
+        $this->setRedisRecord($cashRecord);
 
         return $cashRecord;
     }
@@ -119,40 +111,40 @@ class CashService
     }
 
     /**
-     * @param \Symfony\Component\HttpFoundation\Request $request
      * @param \App\Entity\User $user
      *
-     * @return int
+     * @return int|bool
      */
-    private function setCash(User $user, $diff)
+    private function setRedisCash(User $user, $diff)
     {
-        $jobListName = self::REDIS_CASH_PREFIX . 'list';
-        $expire = self::REDIS_CASH_EXPIRE;
-        $script = <<<EOT
-            local key = KEYS[1]
-            local cash = ARGV[1]
-            local diff = ARGV[2]
+        $cash = $this->getCash($user);
 
-            if redis.call('GET', key) == false then
-                redis.call('SETNX', key, cash);
-                redis.call('EXPIRE', key, $expire);
-            end
-
-            if redis.call('GET', key) + diff > 0 then
-                redis.call('SADD', '{$jobListName}', key)
-                redis.call('EXPIRE', key, $expire)
-
-                return redis.call('INCRBY', key, diff);
-            end
-
+        if ($cash + $diff < 0) {
             return false;
-        EOT;
+        }
 
-        return $this->redis->eval($script, [
-            $this->getRedisKey($user->getId()),
-            $user->getCash(),
-            $diff,
-        ], 1);
+        return $this->redis->incrBy($this->getRedisKey($user->getId()), $diff);
+    }
+
+    /**
+     * @param \App\Entity\CashRecords
+     *
+     * @return bool
+     */
+    private function setRedisRecord(CashRecords $cashRecord)
+    {
+        $this->redis->select(self::REDIS_CASH_RECORD_DATABASE);
+        $res = $this->redis->rPush(
+            self::REDIS_CASH_PREFIX . 'record',
+            json_encode([
+                'userId' => $cashRecord->getUser()->getId(),
+                'recordId' => $cashRecord->getId(),
+                'diff' => $cashRecord->getDiff()
+            ])
+        );
+        $this->redis->select(self::REDIS_USER_DATABASE);
+
+        return $res;
     }
 
     /**
@@ -162,28 +154,34 @@ class CashService
     {
         /** @var UserRepository */
         $repository = $this->entityManager->getRepository(User::class);
-        $jobListName = self::REDIS_CASH_PREFIX . 'list';
 
-        if ($this->redis->sCard($jobListName) == 0) {
+        $this->redis->select(self::REDIS_CASH_RECORD_DATABASE);
+        $jobListName = self::REDIS_CASH_PREFIX . 'record';
+
+        if ($this->redis->lLen($jobListName) == 0) {
             return false;
         }
 
-        while ($key = $this->redis->sPop($jobListName)) {
-            $cash = $this->redis->get($key);
-            $userId = $this->getUserId($key);
-            $repository->updateCash($userId, $cash);
+        $errorMsg = '';
+
+        while ($res = $this->redis->lPop($jobListName)) {
+            $record = json_decode($res, true);
+
+            if (!$user = $repository->find($record['userId'])) {
+                $errorMsg .= $res . PHP_EOL;
+                continue;
+            }
+
+            $user->setCash($user->getCash() + $record['diff']);
+            $this->entityManager->persist($user);
+        }
+
+        $this->entityManager->flush();
+
+        if ($errorMsg) {
+            throw new \Exception($errorMsg);
         }
 
         return true;
-    }
-
-    /**
-     * @param string $key
-     *
-     * @return string
-     */
-    private function getUserId($redisKey)
-    {
-        return str_replace(self::REDIS_CASH_PREFIX, '', $redisKey);
     }
 }

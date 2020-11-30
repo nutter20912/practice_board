@@ -32,18 +32,22 @@ class CashServiceTest extends DatabaseTestCase
         return $userMcok;
     }
 
-    public function testGetCash()
+    public function testGetCashRedisLiving()
     {
         //arrange
-        $cash = 100;
+        $redisCash = 100;
+        $databaseCash = 200;
 
         /** @var MockObject&\Redis */
         $redisMcok = $this
             ->getMockBuilder(\Redis::class)
             ->getMock();
         $redisMcok
-            ->method('eval')
-            ->willReturn($cash);
+            ->method('setNx')
+            ->willReturn(false);
+        $redisMcok
+            ->method('get')
+            ->willReturn($redisCash);
 
         /** @var MockObject&EntityManagerInterface */
         $entityManagerMcok = $this
@@ -51,7 +55,7 @@ class CashServiceTest extends DatabaseTestCase
             ->getMock();
 
         /** @var MockObject&User */
-        $userMcok = $this->getUserMock(1, 'paul', $cash);
+        $userMcok = $this->getUserMock(1, 'paul', $databaseCash);
 
         //act
         $service = new CashService($entityManagerMcok, $redisMcok);
@@ -59,6 +63,40 @@ class CashServiceTest extends DatabaseTestCase
 
         //assert
         $this->assertIsInt($response);
+        $this->assertEquals($redisCash, $response);
+    }
+
+    public function testGetCashRedisExpired()
+    {
+        //arrange
+        $databaseCash = 200;
+
+        /** @var MockObject&\Redis */
+        $redisMcok = $this
+            ->getMockBuilder(\Redis::class)
+            ->getMock();
+        $redisMcok
+            ->method('setNx')
+            ->willReturn(true);
+        $redisMcok
+            ->method('expire')
+            ->willReturn(true);
+
+        /** @var MockObject&EntityManagerInterface */
+        $entityManagerMcok = $this
+            ->getMockBuilder(EntityManagerInterface::class)
+            ->getMock();
+
+        /** @var MockObject&User */
+        $userMcok = $this->getUserMock(1, 'paul', $databaseCash);
+
+        //act
+        $service = new CashService($entityManagerMcok, $redisMcok);
+        $response = $service->getCash($userMcok);
+
+        //assert
+        $this->assertIsInt($response);
+        $this->assertEquals($databaseCash, $response);
     }
 
     public function testChangeCashSuccess()
@@ -72,7 +110,13 @@ class CashServiceTest extends DatabaseTestCase
             ->getMockBuilder(\Redis::class)
             ->getMock();
         $redisMcok
-            ->method('eval')
+            ->method('setNx')
+            ->willReturn(false);
+        $redisMcok
+            ->method('get')
+            ->willReturn($cash);
+        $redisMcok
+            ->method('incrBy')
             ->willReturn($cash + $diff);
 
         /** @var MockObject&EntityManagerInterface */
@@ -95,7 +139,7 @@ class CashServiceTest extends DatabaseTestCase
     public function changeFailProvider()
     {
         return [
-            [10000], //over cash
+            [-10000], //over cash
             [0],     //zero cash
         ];
     }
@@ -115,7 +159,10 @@ class CashServiceTest extends DatabaseTestCase
             ->getMockBuilder(\Redis::class)
             ->getMock();
         $redisMcok
-            ->method('eval')
+            ->method('get')
+            ->willReturn($cash);
+        $redisMcok
+            ->method('setNx')
             ->willReturn(false);
 
         /** @var MockObject&EntityManagerInterface */
@@ -140,6 +187,12 @@ class CashServiceTest extends DatabaseTestCase
         $redisMcok = $this
             ->getMockBuilder(\Redis::class)
             ->getMock();
+        $redisMcok
+            ->method('select')
+            ->willReturn(true);
+        $redisMcok
+            ->method('rPush')
+            ->willReturn(true);
 
         /** @var MockObject&EntityManagerInterface */
         $entityManagerMcok = $this
@@ -176,11 +229,10 @@ class CashServiceTest extends DatabaseTestCase
     /**
      * @dataProvider updateProvider
      */
-    public function testUpdateCashList($count, $result)
+    public function testUpdateCashListSuccess($count, $result)
     {
         //arrange
-        $redisCash = 100;
-        $redisKey = 'cash:1';
+        $res = '{"userId":1,"recordId":1,"diff":10}';
         $this->loadFixture(UserFixtures::class);
 
         /** @var MockObject&\Redis */
@@ -188,14 +240,14 @@ class CashServiceTest extends DatabaseTestCase
             ->getMockBuilder(\Redis::class)
             ->getMock();
         $redisMcok
-            ->method('sCard')
+            ->method('select')
+            ->willReturn(true);
+        $redisMcok
+            ->method('lLen')
             ->willReturn($count);
         $redisMcok
-            ->method('sPop')
-            ->will($this->onConsecutiveCalls($redisKey, false));
-        $redisMcok
-            ->method('get')
-            ->willReturn($redisCash);
+            ->method('lPop')
+            ->will($this->onConsecutiveCalls($res, false));
 
         $entityManager = self::bootKernel()
             ->getContainer()
@@ -208,5 +260,38 @@ class CashServiceTest extends DatabaseTestCase
 
         //assert
         $this->assertEquals($result, $response);
+    }
+
+    /**
+     * @expectedException \Exception
+     */
+    public function testUpdateCashListWithErrorUser()
+    {
+        //arrange
+        $res = '{"userId":999,"recordId":1,"diff":10}';
+        $this->loadFixture(UserFixtures::class);
+
+        /** @var MockObject&\Redis */
+        $redisMcok = $this
+            ->getMockBuilder(\Redis::class)
+            ->getMock();
+        $redisMcok
+            ->method('select')
+            ->willReturn(true);
+        $redisMcok
+            ->method('lLen')
+            ->willReturn(1);
+        $redisMcok
+            ->method('lPop')
+            ->will($this->onConsecutiveCalls($res, false));
+
+        $entityManager = self::bootKernel()
+            ->getContainer()
+            ->get('doctrine')
+            ->getManager();
+
+        //act
+        $service = new CashService($entityManager, $redisMcok);
+        $response = $service->updateCashList();
     }
 }

@@ -39,11 +39,16 @@ class CashSyncCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $msg = $this->cashService->updateCashList() ?
-            'Update cash success.' :
-            'Nothing update cash.';
-
-        $io->success($msg);
+        try {
+            $msg = $this->cashService->updateCashList() ?
+                'Update cash success.' :
+                'Nothing update cash.';
+            $io->success($msg);
+        } catch (\Exception $e) {
+            $io->error(
+                "Update complete.\n\nNot found users:\n" . $e->getMessage()
+            );
+        }
 
         return 0;
     }

@@ -28,6 +28,7 @@ class CashConcurrencyCommandTest extends DatabaseTestCase
         $output = $commandTester->getDisplay();
 
         //assert
+        $this->assertContains('[OK]', $output);
         $this->assertContains('Cash concurrency test complete.', $output);
     }
 
@@ -48,6 +49,7 @@ class CashConcurrencyCommandTest extends DatabaseTestCase
         $output = $commandTester->getDisplay();
 
         //assert
+        $this->assertContains('[ERROR]', $output);
         $this->assertContains(sprintf('Not found user: %s', 'QQQ'), $output);
     }
 
