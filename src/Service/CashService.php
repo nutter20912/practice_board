@@ -152,9 +152,6 @@ class CashService
      */
     public function updateCashList()
     {
-        /** @var UserRepository */
-        $repository = $this->entityManager->getRepository(User::class);
-
         $this->redis->select(self::REDIS_CASH_RECORD_DATABASE);
         $jobListName = self::REDIS_CASH_PREFIX . 'record';
 
@@ -167,7 +164,7 @@ class CashService
         while ($res = $this->redis->lPop($jobListName)) {
             $record = json_decode($res, true);
 
-            if (!$user = $repository->find($record['userId'])) {
+            if (!$user = $this->entityManager->find(User::class, $record['userId'])) {
                 $errorMsg .= $res . PHP_EOL;
                 continue;
             }
