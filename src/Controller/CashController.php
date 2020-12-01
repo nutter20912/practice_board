@@ -57,7 +57,7 @@ class CashController
         CashService $cashService,
         User $user
     ): JsonResponse {
-        $diff = (int)$request->get('cash');
+        $diff = $cashService->cashFormat((float)$request->get('cash'));
         $cash = $cashService->changeCash($user, $diff);
         $cashRecord = $cashService->addCashRecord($request, $user, $cash, $diff);
 
@@ -85,7 +85,7 @@ class CashController
         CashService $cashService,
         User $user
     ): JsonResponse {
-        $diff = (int)$request->get('cash') * -1;
+        $diff = $cashService->cashFormat((float)$request->get('cash') * -1);
         $cash = $cashService->changeCash($user, $diff);
         $cashRecord = $cashService->addCashRecord($request, $user, $cash, $diff);
 

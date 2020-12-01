@@ -62,8 +62,8 @@ class CashServiceTest extends DatabaseTestCase
         $response = $service->getCash($userMcok);
 
         //assert
-        $this->assertIsInt($response);
-        $this->assertEquals($redisCash, $response);
+        $this->assertIsFloat($response);
+        $this->assertEquals(0, bccomp($redisCash, $response));
     }
 
     public function testGetCashRedisExpired()
@@ -95,15 +95,25 @@ class CashServiceTest extends DatabaseTestCase
         $response = $service->getCash($userMcok);
 
         //assert
-        $this->assertIsInt($response);
-        $this->assertEquals($databaseCash, $response);
+        $this->assertIsFloat($response);
+        $this->assertEquals(0, bccomp($databaseCash, $response));
     }
 
-    public function testChangeCashSuccess()
+    public function changeCashProvider()
+    {
+        return [
+            [100, 50],
+            [100.0, -99.8],
+        ];
+    }
+
+    /**
+     * @dataProvider changeCashProvider
+     */
+    public function testChangeCashSuccess($cash, $diff)
     {
         //arrange
-        $cash = 100;
-        $diff = 50;
+        $newCash = bcadd($cash, $diff, 3);
 
         /** @var MockObject&\Redis */
         $redisMcok = $this
@@ -116,8 +126,8 @@ class CashServiceTest extends DatabaseTestCase
             ->method('get')
             ->willReturn($cash);
         $redisMcok
-            ->method('incrBy')
-            ->willReturn($cash + $diff);
+            ->method('set')
+            ->willReturn(true);
 
         /** @var MockObject&EntityManagerInterface */
         $entityManagerMcok = $this
@@ -132,8 +142,8 @@ class CashServiceTest extends DatabaseTestCase
         $response = $service->changeCash($userMcok, $diff);
 
         //assert
-        $this->assertIsInt($response);
-        $this->assertEquals($cash + $diff, $response);
+        $this->assertIsFloat($response);
+        $this->assertEquals(0, bccomp($newCash, $response));
     }
 
     public function changeFailProvider()
@@ -293,5 +303,38 @@ class CashServiceTest extends DatabaseTestCase
         //act
         $service = new CashService($entityManager, $redisMcok);
         $response = $service->updateCashList();
+    }
+
+    public function FormatProvider()
+    {
+        return [
+            [1, 1],
+            //3位後捨去
+            [1.0014, 1.001],
+            [1.0019, 1.001],
+        ];
+    }
+
+    /**
+     * @dataProvider FormatProvider
+     */
+    public function testCashFormat($cash, $expect)
+    {
+        /** @var MockObject&\Redis */
+        $redisMcok = $this
+            ->getMockBuilder(\Redis::class)
+            ->getMock();
+
+        $entityManager = self::bootKernel()
+            ->getContainer()
+            ->get('doctrine')
+            ->getManager();
+
+        //act
+        $service = new CashService($entityManager, $redisMcok);
+        $response = $service->cashFormat($cash);
+
+        //assert
+        $this->assertEquals(0, bccomp($expect, $response));
     }
 }

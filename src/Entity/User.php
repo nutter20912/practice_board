@@ -39,7 +39,9 @@ class User
      * @ORM\Column(
      *  name="cash",
      *  options={"comment"="額度"},
-     * type="integer"
+     *  type="decimal",
+     *  precision=10,
+     *  scale=3
      * )
      */
     private $cash;
