@@ -44,7 +44,9 @@ class CashRecords
      * @ORM\Column(
      *  name="diff",
      *  options={"comment"="異動額度"},
-     *  type="integer"
+     *  type="decimal",
+     *  precision=10,
+     *  scale=3
      * )
      */
     private $diff;
@@ -53,7 +55,9 @@ class CashRecords
      * @ORM\Column(
      *  name="current",
      *  options={"comment"="異動後額度"},
-     *  type="integer"
+     *  type="decimal",
+     *  precision=10,
+     *  scale=3
      * )
      */
     private $current;

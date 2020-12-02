@@ -14,6 +14,7 @@ class CashService
     const REDIS_CASH_RECORD_DATABASE = 1;
     const REDIS_CASH_PREFIX = 'cash:';
     const REDIS_CASH_EXPIRE = 3600;
+    const DECIMAL_SCALE = 3;
 
     /**
      * @var \Redis
@@ -38,7 +39,7 @@ class CashService
     /**
      * @param \App\Entity\User $user
      *
-     * @return int
+     * @return float
      */
     public function getCash(User $user)
     {
@@ -46,17 +47,17 @@ class CashService
 
         if ($this->redis->setNx($key, $user->getCash())) {
             $this->redis->expire($key, self::REDIS_CASH_EXPIRE);
-            return $user->getCash();
+            return (float)$user->getCash();
         }
 
-        return $this->redis->get($key);
+        return (float)$this->redis->get($key);
     }
 
     /**
      * @param \App\Entity\User $user
-     * @param int $diff
+     * @param float $diff
      *
-     * @return int
+     * @return float
      *
      * @throws App\Exceptions\ApiValidationException
      */
@@ -70,14 +71,14 @@ class CashService
             throw new ApiValidationException('over cash', 903);
         }
 
-        return $cash;
+        return (float)$cash;
     }
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
      * @param \App\Entity\User $user
-     * @param int $cash
-     * @param int $diff
+     * @param float $cash
+     * @param float $diff
      *
      * @return \App\Entity\CashRecords
      */
@@ -113,17 +114,19 @@ class CashService
     /**
      * @param \App\Entity\User $user
      *
-     * @return int|bool
+     * @return float|bool
      */
     private function setRedisCash(User $user, $diff)
     {
-        $cash = $this->getCash($user);
+        $newCash = bcadd($this->getCash($user), $diff, self::DECIMAL_SCALE);
 
-        if ($cash + $diff < 0) {
+        if ($newCash < 0) {
             return false;
         }
 
-        return $this->redis->incrBy($this->getRedisKey($user->getId()), $diff);
+        $this->redis->set($this->getRedisKey($user->getId()), $newCash);
+
+        return $newCash;
     }
 
     /**
@@ -169,7 +172,9 @@ class CashService
                 continue;
             }
 
-            $user->setCash($user->getCash() + $record['diff']);
+            $user->setCash(
+                bcadd($user->getCash(), $record['diff'], self::DECIMAL_SCALE)
+            );
             $this->entityManager->persist($user);
         }
 
@@ -180,5 +185,15 @@ class CashService
         }
 
         return true;
+    }
+
+    /**
+     * @param float $cash
+     *
+     * @return float
+     */
+    public function cashFormat($cash)
+    {
+        return bcadd($cash, 0, self::DECIMAL_SCALE);
     }
 }
