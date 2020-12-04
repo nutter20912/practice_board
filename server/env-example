@@ -1,0 +1,37 @@
+### base configuration #########
+
+APP_CODE_PATH_HOST=../
+DATA_PATH_HOST=./.data
+
+### php-fpm ####################
+
+PHP_VERSION=7.3
+
+### nginx ######################
+
+NGINX_HOST_HTTP_PORT=8080
+
+### mysql ######################
+
+MYSQL_VERSION=5.7
+MYSQL_DATABASE=board
+MYSQL_USER=paul
+MYSQL_PASSWORD=UrjExJKIjLlmqRkH
+MYSQL_PORT=3306
+MYSQL_ROOT_PASSWORD=root
+MYSQL_ENTRYPOINT_INITDB=./mysql/docker-entrypoint-initdb.d
+
+### phpmyadmin #################
+
+PMA_PORT=8081
+
+### redis ######################
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+### phpredisadmin ##############
+
+REDIS_ADMIN_USER=root
+REDIS_ADMIN_PASS=root
+REDIS_ADMIN_PORT=63790
