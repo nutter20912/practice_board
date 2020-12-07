@@ -33,3 +33,6 @@ yarn-error.log
 ### ApacheBench test ###
 cmd.sh
 data.txt
+
+### docker file ###
+/server/.data
